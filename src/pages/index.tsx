@@ -59,7 +59,7 @@ export default function Home() {
 
     try {
       const { created, expires, started, value } = await contract.subscriptions(
-        "0x3fb4f0a296e8c18a9777118ae49ef50968d84e0e"
+        wallet.address
       );
       setSubscription({
         created: created * 1000,
@@ -76,7 +76,7 @@ export default function Home() {
       method: "POST",
       body: JSON.stringify({
         payload: {
-          wallet: "0x3fb4f0a296e8c18a9777118ae49ef50968d84e0e",
+          wallet: wallet?.address,
           session: session,
         },
       }),
@@ -105,7 +105,7 @@ export default function Home() {
           content: message,
         });
       } else {
-        const {message} = await request.json();
+        const { message } = await request.json();
         handleNotification({
           type: "ERROR",
           title: "Error",

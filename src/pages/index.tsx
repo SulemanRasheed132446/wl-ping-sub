@@ -248,9 +248,9 @@ export default function Home() {
               {roleTimestamp}
               {subscription.expires <= Date.now() ? (
                 <div>
-                  <button className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4">
+                  <a className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4" href="https://llamastore-lovat.vercel.app/product/01GW7SCZCKQH3C0YMH5HSM6B91" target={"_blank"}>
                     SUBSCRIBE
-                  </button>
+                  </a>
                 </div>
               ) : (
                 <>

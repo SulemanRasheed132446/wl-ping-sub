@@ -1,11 +1,119 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import { Inter } from "next/font/google";
+import { signIn, useSession, signOut } from "next-auth/react";
+import { useState } from "react";
+import initWallet, { Wallet } from "@/component/wallet/initWallet";
+const inter = Inter({ subsets: ["latin"] });
+import { BigNumber, ethers } from "ethers";
+import { CONFIG } from "../../config";
+import { signToken } from "@/utils";
+import {
+  Error,
+  NotificationEnum,
+  NotificationProps,
+  Success,
+} from "@/component/Notifications";
 
-const inter = Inter({ subsets: ['latin'] })
-
+interface Subscription {
+  created: number;
+  expires: number;
+  started: number;
+  value: number;
+}
 export default function Home() {
+  const { data: session = { accessToken: undefined }, status } = useSession();
+  const [wallet, setWallet] = useState<Wallet>();
+  const [subscription, setSubscription] = useState<Subscription>();
+  const [notification, setNotication] = useState<NotificationProps>();
+
+  const handleWallet = async () => {
+    if (wallet) {
+      return;
+    }
+    const walletInfo = await initWallet(handleWallet, setWallet);
+    setWallet(walletInfo);
+    if (walletInfo) {
+      checkSubscription(walletInfo);
+    }
+  };
+
+  function handleNotification({ type, title, content }: NotificationProps) {
+    setNotication({ type, title, content });
+  }
+
+  function handleCloseNotification() {
+    setNotication(undefined);
+  }
+
+  const checkSubscription = async (wallet: Wallet) => {
+    if (!wallet) {
+      return;
+    }
+
+    const contract = new ethers.Contract(
+      CONFIG.contractAddress,
+      CONFIG.contractABI,
+      wallet.signer
+    );
+
+    try {
+      const { created, expires, started, value } = await contract.subscriptions(
+        "0x3fb4f0a296e8c18a9777118ae49ef50968d84e0e"
+      );
+      setSubscription({
+        created: created * 1000,
+        expires: expires * 1000,
+        started: started * 1000,
+        value,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const migrate = async () => {
+    const jwtRequest = await fetch("/api/jwt", {
+      method: "POST",
+      body: JSON.stringify({
+        payload: {
+          wallet: "0x3fb4f0a296e8c18a9777118ae49ef50968d84e0e",
+          session: session,
+        },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    if (jwtRequest.ok) {
+      const { token } = await jwtRequest.json();
+      const request = await fetch("/api/migrate", {
+        method: "POST",
+        body: JSON.stringify({
+          token: token,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      if (request.ok) {
+        const { message } = await request.json();
+        handleNotification({
+          type: "SUCCESS",
+          title: "Congrats",
+          content: message,
+        });
+      } else {
+        const {message} = await request.json();
+        handleNotification({
+          type: "ERROR",
+          title: "Error",
+          content: message,
+        });
+      }
+    }
+  };
   return (
     <>
       <Head>
@@ -14,110 +122,121 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
+      <main className="text-white font-['pixel'] min-w-screen min-h-screen bg-[#0F111B]  ">
+        <div className="text-white flex justify-between px-[2%] py-4 items-center border-b-2 border-[#1C2031]">
+          {!notification ? null : notification.type ==
+            NotificationEnum.Success ? (
+            <Success
+              title={notification.title}
+              content={notification.content}
+              handleCloseNotification={handleCloseNotification}
             />
+          ) : (
+            <Error
+              title={notification.title}
+              content={notification.content}
+              handleCloseNotification={handleCloseNotification}
+            />
+          )}
+          <div className="flex items-center">
+            <div className="flex items-center cursor-pointer">
+              <img src="/logo.svg" />
+              <p className="font-bold text-[#FF25D1] text-xl md:text-2xl">
+                WHITELISTPING
+              </p>
+            </div>
           </div>
         </div>
+        <div className=" top-0 flex items-center flex-col justify-center mt-[5%]">
+          <p className="text-3xl md:text-6xl text-[#FF25D1]">SUBSCRIPTION</p>
+          <p className="text-xs md:tex-base  w-8/12 text-center mt-2 md:mt-4 uppercase text-[#00FFC7]">
+            Steps for users migrating from v1 to v2
+          </p>
+          <div className="w-5/12">
+            <ul className="text-left list-decimal py-4">
+              <li className="text-xs md:tex-base   mt-2 md:mt-4 uppercase text-[#00FFC7]">
+                Connect your discord that you want to user for v2
+              </li>
+              <li className="text-xs md:tex-base  mt-2 md:mt-4 uppercase text-[#00FFC7]">
+                Connect your wallet that you used to apply for subscrption on v1
+              </li>
+              <li className="text-xs md:tex-base   mt-2 md:mt-4 uppercase text-[#00FFC7]">
+                You will see the details of your subscription
+              </li>
+              <li className="text-xs md:tex-base   mt-2 md:mt-4 uppercase text-[#00FFC7]">
+                After carefli ly examining your detail , you will see a migrate
+                button
+              </li>
+              <li className="text-xs md:tex-base   mt-2 md:mt-4 uppercase text-[#00FFC7]">
+                Click on migrate button to migrate , It will take 24-48 hrs to
+                provide the access to v2 role
+              </li>
+            </ul>
+          </div>
 
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm mb-2"
+            onClick={() => {
+              status === "unauthenticated" ? signIn() : signOut();
+            }}
           >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
+            {status === "unauthenticated"
+              ? " Login with Discord "
+              : "Disconnect Discord"}
+          </button>
+          {status === "authenticated" && (
+            <button
+              className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm"
+              onClick={handleWallet}
+            >
+              {wallet
+                ? `Connected ${wallet.address.slice(
+                    0,
+                    4
+                  )}...${wallet.address.slice(
+                    wallet.address.length - 8,
+                    wallet.address.length
+                  )}`
+                : "Connect Wallet"}
+            </button>
+          )}
+          {subscription && (
+            <div className="py-6">
+              <p className="text-xl md:text-2xl text-[#FF25D1]">
+                SUBSCRIPTION INFO
+              </p>
+              <p className="pt-4">
+                <span className="text-[#00FFC7]">STARTED </span>
+                {subscription.started
+                  ? new Date(subscription.created).toLocaleString()
+                  : "No Subscription"}
+              </p>
+              <p>
+                <span className="text-[#00FFC7]">ENDS AT </span>
+                {subscription.expires
+                  ? new Date(subscription.expires).toLocaleString()
+                  : "No Subscription"}
+              </p>
+              {subscription.expires <= Date.now() ? (
+                <div>
+                  <p>Sorry but your subscription has already expired</p>
+                  <p>Click the button below to subscribe as a V1 holder</p>
+                  <button className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4">
+                    SUBSCRIBE
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4"
+                  onClick={migrate}
+                >
+                  MIGRATE
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </>
-  )
+  );
 }

@@ -6,8 +6,8 @@ const scopes = ["identify", "guilds", "guilds.members.read"].join(" ");
 export const authOptions = {
   providers: [
     DiscordProvider({
-      clientId: "IVb0F9Luh_mym91U2s-GThrCgekQeovx",
-      clientSecret: "1076136316279980082",
+      clientId: "1076136316279980082",
+      clientSecret: "IVb0F9Luh_mym91U2s-GThrCgekQeovx",
       authorization: { params: { scope: scopes } },
     }),
   ],

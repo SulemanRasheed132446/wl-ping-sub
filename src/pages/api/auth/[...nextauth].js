@@ -6,12 +6,12 @@ const scopes = ["identify", "guilds", "guilds.members.read"].join(" ");
 export const authOptions = {
   providers: [
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET,
+      clientId: "IVb0F9Luh_mym91U2s-GThrCgekQeovx",
+      clientSecret: "1076136316279980082",
       authorization: { params: { scope: scopes } },
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
+  secret:"asteria",
   callbacks: {
     async session({ session, token, user }) {
       session.user.id = token.id;

@@ -2,7 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { signIn, useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import initWallet, { Wallet } from "@/component/wallet/initWallet";
 const inter = Inter({ subsets: ["latin"] });
 import { BigNumber, ethers } from "ethers";
@@ -26,6 +26,44 @@ export default function Home() {
   const [wallet, setWallet] = useState<Wallet>();
   const [subscription, setSubscription] = useState<Subscription>();
   const [notification, setNotication] = useState<NotificationProps>();
+
+  const roleTimestamp = useMemo(() => {
+    if (!subscription || subscription.expires === 0) {
+      return (
+        <>
+          <p>Sorry but your subscription has already expired</p>
+          <p>Click the button below to subscribe as a V1 holder</p>
+        </>
+      );
+    }
+
+    const date1 = new Date(subscription.expires);
+    const date2 = new Date(Date.now());
+
+    // Convert the dates to Unix timestamps
+    const date1Timestamp = date1.getTime();
+    const date2Timestamp = date2.getTime();
+
+    // Calculate the difference in milliseconds
+    const diffInMs = Math.abs(date2Timestamp - date1Timestamp);
+
+    // Convert the difference to days, months, and hours
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInHours = Math.floor(
+      (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+    return (
+      <>
+        <p>
+          You will be given the role for v2 for
+          {diffInMonths ? `${diffInMonths} months x` : ""} {diffInDays}  days
+        </p>
+        <p>And then you can resubscribe through our new payment processor</p>
+      </>
+    );
+    // Output the result
+  }, [subscription]);
 
   const handleWallet = async () => {
     if (wallet) {
@@ -59,8 +97,9 @@ export default function Home() {
 
     try {
       const { created, expires, started, value } = await contract.subscriptions(
-        wallet.address
+        "0x4957c2d6fb36d60e7438ee3915f066e5392dc45b"
       );
+      console.log(created, expires, started, value);
       setSubscription({
         created: created * 1000,
         expires: expires * 1000,
@@ -71,6 +110,7 @@ export default function Home() {
       console.log(err);
     }
   };
+  console.log(subscription);
   const migrate = async () => {
     const jwtRequest = await fetch("/api/jwt", {
       method: "POST",
@@ -201,37 +241,26 @@ export default function Home() {
             </button>
           )}
           {subscription && (
-            <div className="py-6">
+            <div className="py-6 text-center">
               <p className="text-xl md:text-2xl text-[#FF25D1]">
                 SUBSCRIPTION INFO
               </p>
-              <p className="pt-4">
-                <span className="text-[#00FFC7]">STARTED </span>
-                {subscription.started
-                  ? new Date(subscription.created).toLocaleString()
-                  : "No Subscription"}
-              </p>
-              <p>
-                <span className="text-[#00FFC7]">ENDS AT </span>
-                {subscription.expires
-                  ? new Date(subscription.expires).toLocaleString()
-                  : "No Subscription"}
-              </p>
+              {roleTimestamp}
               {subscription.expires <= Date.now() ? (
                 <div>
-                  <p>Sorry but your subscription has already expired</p>
-                  <p>Click the button below to subscribe as a V1 holder</p>
                   <button className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4">
                     SUBSCRIBE
                   </button>
                 </div>
               ) : (
-                <button
-                  className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4"
-                  onClick={migrate}
-                >
-                  MIGRATE
-                </button>
+                <>
+                  <button
+                    className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4"
+                    onClick={migrate}
+                  >
+                    CLAIM ROLE
+                  </button>
+                </>
               )}
             </div>
           )}

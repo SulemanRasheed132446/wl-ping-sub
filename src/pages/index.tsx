@@ -97,7 +97,7 @@ export default function Home() {
 
     try {
       const { created, expires, started, value } = await contract.subscriptions(
-        "0x4957c2d6fb36d60e7438ee3915f066e5392dc45b"
+       wallet?.address
       );
       console.log(created, expires, started, value);
       setSubscription({

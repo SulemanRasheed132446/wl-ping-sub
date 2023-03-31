@@ -74,7 +74,9 @@ export default async function handler(
           }),
           headers: {
             "Content-Type": "application/json",
-            Accept: "application/json",
+            'Accept': "application/json",
+            'api-key':process.env.API_KEY!
+
           },
         });
         if (assignRole.ok) {

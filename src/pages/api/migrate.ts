@@ -64,6 +64,19 @@ export default async function handler(
             timeStamp: "" + expires,
           },
         });
+        const assignRole = await fetch(process.env.LLAMASTORE_ENDPOINT!, {
+          method: "POST",
+          body: JSON.stringify({
+            discordID: user.id,
+            guildID: process.env.GUILD_ID!,
+            roleID: process.env.ROLE_ID!,
+            duration: Math.round((expires * 1000 - Date.now()) / 1000),
+          }),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
         return res.status(200).send({
           message: "Your subscription has been added to v1",
           subscription: subscription,

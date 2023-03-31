@@ -77,10 +77,22 @@ export default async function handler(
             Accept: "application/json",
           },
         });
-        return res.status(200).send({
-          message: "Your subscription has been added to v1",
-          subscription: subscription,
-        });
+        if (assignRole.ok) {
+          return res.status(200).send({
+            message: "Your subscription has been added to v1",
+            subscription: subscription,
+          });
+        } else {
+          return res.status(200).send({
+            message: "Your subscription was not added to v2",
+            subscription: {
+              discordID: user.id,
+              guildID: process.env.GUILD_ID!,
+              roleID: process.env.ROLE_ID!,
+              duration: Math.round((expires * 1000 - Date.now()) / 1000),
+            },
+          });
+        }
       } catch (err) {
         return res.status(400).send({
           message: "Your discord or wallet had already been registered",

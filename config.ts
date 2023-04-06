@@ -3,7 +3,7 @@ export const CONTRACT_ADDRESS = "0x239eCdE3ae0e467111c898AAbB91b35d6B26f14F";
 export const API_KEY =
   "<add necessary api key from any web3 provider (eg. alchemy, quicknode, infura, etc...)>";
 export const INFURA_ID =
-  process.env.NEXT_PUBLIC_INFURA_ID || "eed536650d92417f8dde4371c4d7ab0d";
+  process.env.NEXT_PUBLIC_INFURA_ID || "2ae8717688ef44c9ab60314664d1e23e";
 export const ETHEREUM_URL =
   process.env.NEXT_PUBLIC_ETHEREUM_URL ||
   `https://${NETWORK}.infura.io/v3/${INFURA_ID}`;

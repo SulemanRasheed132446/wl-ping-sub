@@ -26,6 +26,7 @@ export default function Home() {
   const [wallet, setWallet] = useState<Wallet>();
   const [subscription, setSubscription] = useState<Subscription>();
   const [notification, setNotication] = useState<NotificationProps>();
+  const [loading, setLoading] = useState(false);
 
   const roleTimestamp = useMemo(() => {
     if (!subscription || subscription.expires === 0) {
@@ -57,7 +58,7 @@ export default function Home() {
       <>
         <p>
           You will be given the role for v2 for
-          {diffInMonths ? `${diffInMonths} months x` : ""} {diffInDays}  days
+          {diffInMonths ? `${diffInMonths} months x` : ""} {diffInDays} days
         </p>
         <p>And then you can resubscribe through our new payment processor</p>
       </>
@@ -97,9 +98,9 @@ export default function Home() {
 
     try {
       const { created, expires, started, value } = await contract.subscriptions(
-       wallet?.address
+        wallet.address
       );
-      console.log(created, expires, started, value);
+
       setSubscription({
         created: created * 1000,
         expires: expires * 1000,
@@ -110,8 +111,12 @@ export default function Home() {
       console.log(err);
     }
   };
-  console.log(subscription);
+
   const migrate = async () => {
+    if (loading) {
+      return;
+    }
+    setLoading(true);
     const jwtRequest = await fetch("/api/jwt", {
       method: "POST",
       body: JSON.stringify({
@@ -153,6 +158,7 @@ export default function Home() {
         });
       }
     }
+    setLoading(false);
   };
   return (
     <>
@@ -248,7 +254,11 @@ export default function Home() {
               {roleTimestamp}
               {subscription.expires <= Date.now() ? (
                 <div>
-                  <a className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4" href="https://llamastore-lovat.vercel.app/product/01GW7SCZCKQH3C0YMH5HSM6B91" target={"_blank"}>
+                  <a
+                    className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4"
+                    href="https://llamastore-lovat.vercel.app/product/01GW7SCZCKQH3C0YMH5HSM6B91"
+                    target={"_blank"}
+                  >
                     SUBSCRIBE
                   </a>
                 </div>
@@ -258,7 +268,7 @@ export default function Home() {
                     className="bg-[#FF25D1] uppercase px-10  py-2 rounded-sm m-auto block mt-4"
                     onClick={migrate}
                   >
-                    CLAIM ROLE
+                    {loading ? "LOADING" : "CLAIM ROLE"}
                   </button>
                 </>
               )}

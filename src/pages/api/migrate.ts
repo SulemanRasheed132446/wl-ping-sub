@@ -16,34 +16,39 @@ export default async function handler(
   const { method, body } = req;
   switch (method) {
     case "POST":
-      const { token } = body;
-      const data: JwtPayload = verifyToken(token) as JwtPayload;
-      const { session, wallet } = data;
-      if (!session || !session.user || !session.accessToken || !token) {
-        return res.status(400).send({
-          message: "Invalid access token or wallet Address",
-        });
-      }
-      const user = await getDiscordUserInfo(session.accessToken);
-      const provider = new ethers.providers.JsonRpcProvider(
-        ETHEREUM_URL,
-        NETWORK
-      );
-      const contract = new ethers.Contract(
-        CONFIG.contractAddress,
-        CONFIG.contractABI,
-        provider
-      );
-
-      const { created, expires, started, value } = await contract.subscriptions(
-        wallet
-      );
-      if (expires * 1000 < Date.now()) {
-        return res.status(400).send({
-          message: "Your subscription for v1 is already expired",
-        });
-      }
       try {
+        const { token } = body;
+        const data: JwtPayload = verifyToken(token) as JwtPayload;
+        const { session, wallet } = data;
+        if (!session || !session.user || !session.accessToken || !token) {
+          return res.status(400).send({
+            message: "Invalid access token or wallet Address",
+          });
+        }
+        const user = await getDiscordUserInfo(session.accessToken);
+        const provider = new ethers.providers.JsonRpcProvider(
+          ETHEREUM_URL,
+          NETWORK
+        );
+        const contract = new ethers.Contract(
+          CONFIG.contractAddress,
+          CONFIG.contractABI,
+          provider
+        );
+
+       
+        const {
+          created,
+          expires,
+          started,
+          value,
+        } = await contract.subscriptions(wallet);
+  
+        if (expires * 1000 < Date.now()) {
+          return res.status(400).send({
+            message: "Your subscription for v1 is already expired",
+          });
+        }
         const alreadyFound = await prisma.subscription.findFirst({
           where: {
             walletAddress: wallet,
@@ -55,7 +60,6 @@ export default async function handler(
         if (alreadyFound) {
           throw new Error("Already presenet");
         }
-
         const subscription = await prisma.subscription.create({
           data: {
             discordId: user.id,
@@ -74,9 +78,8 @@ export default async function handler(
           }),
           headers: {
             "Content-Type": "application/json",
-            'Accept': "application/json",
-            'api-key':process.env.API_KEY!
-
+            Accept: "application/json",
+            "api-key": process.env.API_KEY!,
           },
         });
         if (assignRole.ok) {

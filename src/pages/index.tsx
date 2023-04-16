@@ -29,7 +29,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const roleTimestamp = useMemo(() => {
-    if (!subscription || subscription.expires === 0) {
+    if (
+      !subscription ||
+      subscription.expires === 0 ||
+      subscription.expires < Date.now()
+    ) {
       return (
         <>
           <p>Sorry but your subscription has already expired</p>
@@ -37,6 +41,7 @@ export default function Home() {
         </>
       );
     }
+    console.log(subscription.expires);
 
     const date1 = new Date(subscription.expires);
     const date2 = new Date(Date.now());
@@ -63,6 +68,7 @@ export default function Home() {
         <p>And then you can resubscribe through our new payment processor</p>
       </>
     );
+
     // Output the result
   }, [subscription]);
 
@@ -98,7 +104,7 @@ export default function Home() {
 
     try {
       const { created, expires, started, value } = await contract.subscriptions(
-        wallet.address
+        "0xaB4921b6ae610d1758CC2d62e09dbE3B9BaAbb86"
       );
 
       setSubscription({
